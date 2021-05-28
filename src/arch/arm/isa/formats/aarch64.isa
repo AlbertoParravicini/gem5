@@ -53,6 +53,8 @@ namespace Aarch64
     StaticInstPtr decodeSveMem(ExtMachInst machInst);
 
     StaticInstPtr decodeGem5Ops(ExtMachInst machInst);
+
+    StaticInstPtr decodeJsSmiLoads(ExtMachInst machInst);
 }
 }};
 
@@ -1914,6 +1916,112 @@ namespace Aarch64
 }
 }};
 
+///////////////////////
+// JS SMI Arithmetic //
+///////////////////////
+
+output decoder {{
+namespace Aarch64
+{
+
+    StaticInstPtr
+    decodeJsSmiLoads(ExtMachInst machInst)
+    {
+        // bit 28:25=0001
+        switch (bits(machInst, 28, 25)) {
+          case 0x1:
+          {
+            uint8_t switchVal = (bits(machInst, 23, 22) << 0) |
+                                (bits(machInst, 26) << 2) |
+                                (bits(machInst, 31, 30) << 3);
+            if (bits(machInst, 24) == 1) { // Immediate offset;
+                // bit 24=1
+                uint64_t imm12 = bits(machInst, 21, 10);
+                IntRegIndex rt = (IntRegIndex)(uint32_t)bits(machInst, 4, 0);
+                IntRegIndex rn = (IntRegIndex)(uint32_t)bits(machInst, 9, 5);
+                IntRegIndex rnsp = makeSP(rn);
+                switch (switchVal) {
+                  case 0x11: // 32 bit;
+                    return new LDRW64_SMI_IMM(machInst, rt, rnsp, imm12 << 2);
+                  case 0x19: // 64 bit;
+                    return new LDRX64_SMI_IMM(machInst, rt, rnsp, imm12 << 3);
+                  default:
+                    return new Unknown64(machInst);
+                }
+            } else if (bits(machInst, 21) == 1) { // Register offset;
+                // bit 24=0, 21=1
+                uint8_t group = bits(machInst, 11, 10);
+                switch (group) {
+                  case 0x0:
+                    return new Unknown64(machInst);
+                  case 0x1:
+                  case 0x3:
+                    return new Unknown64(machInst);
+                  case 0x2:
+                    {
+                        if (!bits(machInst, 14))
+                            return new Unknown64(machInst);
+                        IntRegIndex rt = (IntRegIndex)(uint32_t)
+                            bits(machInst, 4, 0);
+                        IntRegIndex rn = (IntRegIndex)(uint32_t)
+                            bits(machInst, 9, 5);
+                        IntRegIndex rnsp = makeSP(rn);
+                        IntRegIndex rm = (IntRegIndex)(uint32_t)
+                            bits(machInst, 20, 16);
+                        ArmExtendType type =
+                            (ArmExtendType)(uint32_t)bits(machInst, 15, 13);
+                        uint8_t s = bits(machInst, 12);
+                        switch (switchVal) {
+                          case 0x11: // 32 bit;
+                            return new LDRW64_SMI_REG(machInst, rt, rnsp, rm,
+                                                  type, s * 2);
+                          case 0x19: // 64 bit;
+                            return new LDRX64_SMI_REG(machInst, rt, rnsp, rm,
+                                                  type, s * 3);
+                          default:
+                            return new Unknown64(machInst);
+                        }
+                    }
+                  default:
+                    return new Unknown64(machInst);
+                }
+            } else {
+                // bit 24=0, 21=0
+                switch (bits(machInst, 11, 10)) {
+                  case 0x0:
+                  {
+                    IntRegIndex rt =
+                        (IntRegIndex)(uint32_t)bits(machInst, 4, 0);
+                    IntRegIndex rn =
+                        (IntRegIndex)(uint32_t)bits(machInst, 9, 5);
+                    IntRegIndex rnsp = makeSP(rn);
+                    uint64_t imm = sext<9>(bits(machInst, 20, 12));
+                    switch (switchVal) {
+                      case 0x11:
+                        return new LDURW64_SMI_IMM(machInst, rt, rnsp, imm);
+                      case 0x19:
+                        return new LDURX64_SMI_IMM(machInst, rt, rnsp, imm);
+                      default:
+                        return new Unknown64(machInst);
+                    }
+                  }
+                  default:
+                    return new Unknown64(machInst);
+                }
+            }
+          }
+          default:
+            return new Unknown64(machInst);
+        }
+        return new FailUnimplemented("Unhandled Case1", machInst);
+    }
+}
+}};
+
+//////////////////////////////
+// End of JS SMI Arithmetic //
+//////////////////////////////
+
 output decoder {{
 namespace Aarch64
 {
@@ -3035,7 +3143,9 @@ def format Aarch64() {{
         using namespace Aarch64;
         if (bits(machInst, 27) == 0x0) {
             if (bits(machInst, 28) == 0x0) {
-                if (bits(machInst, 26, 25) != 0x2) {
+                if (bits(machInst, 26, 25) == 0x1) {
+                  return decodeJsSmiLoads(machInst);
+                } else if (bits(machInst, 26, 25) != 0x2) {
                     return new Unknown64(machInst);
                 }
                 if (bits(machInst, 31) == 0x0) {

@@ -396,6 +396,66 @@ let {{
         writeback = False
         post = False
 
+
+    #########################
+    # SMI arithmetic for JS #
+    #########################
+
+    class LoadSmiSingle64(LoadInst64):
+        def emit(self):
+            self.buildEACode()
+
+            # Code that actually handles the access
+            accCode = """
+            WDest = cSwap(Mem%s, isBigEndian64(xc->tcBase()));
+            // Shift SMI to machine int;
+            WDest = WDest >> 1;
+            """
+
+            accCode = accCode % buildMemSuffix(self.sign, self.size)
+            self.codeBlobs["memacc_code"] = accCode
+
+            # Push it out to the output files
+            wbDecl = None
+            if self.writeback and not self.micro:
+                wbDecl = self.wbDecl
+            self.emitHelper(self.base, wbDecl)
+
+    class LoadSmiInst64(LoadInst64):
+        execBase = 'LoadSmi64'
+        def __init__(self, *args, **kargs):
+            super(LoadSmiInst64, self).__init__(*args, **kargs)
+
+    class LoadSmiImmInst64(LoadSmiInst64):
+        def __init__(self, *args, **kargs):
+            super(LoadSmiImmInst64, self).__init__(*args, **kargs)
+            self.offset = " + imm"
+            self.wbDecl = "MicroAddXiUop(machInst, base, base, imm);"
+
+    class LoadSmiRegInst64(LoadSmiInst64):
+        def __init__(self, *args, **kargs):
+            super(LoadSmiRegInst64, self).__init__(*args, **kargs)
+            self.offset = " + extendReg64(XOffset, type, shiftAmt, 64)"
+            self.wbDecl = \
+                "MicroAddXERegUop(machInst, base, base, " + \
+                "                 offset, type, shiftAmt);"
+
+    class LoadSmiImm64(LoadSmiImmInst64, LoadSmiSingle64):
+        decConstBase = 'LoadSmiImm64'
+        base = 'ArmISA::MemoryImm64'
+        writeback = False
+        post = False
+
+    class LoadSmiReg64(LoadSmiRegInst64, LoadSmiSingle64):
+        decConstBase = 'LoadSmiReg64'
+        base = 'ArmISA::MemoryReg64'
+        writeback = False
+        post = False
+
+    ################################
+    # End of SMI arithmetic for JS #
+    ################################
+
     def buildLoads64(mnem, NameBase, size, sign, flavor="normal"):
         LoadImm64(mnem, NameBase + "_IMM", size, sign, flavor=flavor).emit()
         LoadPre64(mnem, NameBase + "_PRE", size, sign, flavor=flavor).emit()
@@ -540,4 +600,21 @@ let {{
     LoadImmDU64("ldrdsxi_uop", "MicroLdrDSXImmUop", size=4, sign=True).emit()
     LoadImmDU64("ldrdfpxi_uop", "MicroLdrDFpXImmUop", size=4,
                 flavor="fp").emit()
+
+    #########################
+    # SMI arithmetic for JS #
+    #########################
+
+    LoadSmiImm64("jsldrsmi", "LDRW64_SMI_IMM",
+                 size=4, sign=False, flavor="normal").emit()
+    LoadSmiImm64("jsldrsmi", "LDRX64_SMI_IMM",
+                 size=4, sign=False, flavor="normal").emit()
+    LoadSmiReg64("jsldrsmi", "LDRW64_SMI_REG",
+                 size=4, sign=False, flavor="normal").emit()
+    LoadSmiReg64("jsldrsmi", "LDRX64_SMI_REG",
+                 size=4, sign=False, flavor="normal").emit()
+    LoadSmiImm64("jsldursmi", "LDURW64_SMI_IMM",
+                 size=4, sign=False, flavor="normal").emit()
+    LoadSmiImm64("jsldursmi", "LDURX64_SMI_IMM",
+                 size=8, sign=False, flavor="normal").emit()
 }};
