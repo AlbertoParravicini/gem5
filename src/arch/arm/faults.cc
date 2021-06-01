@@ -303,6 +303,10 @@ template<> ArmFault::FaultVals ArmFaultVals<ArmSev>::vals(
     "ArmSev Flush",          0x000, 0x000, 0x000, 0x000, 0x000, MODE_SVC,
     0, 0, 0, 0, false, true,  true,  EC_UNKNOWN
 );
+template<> ArmFault::FaultVals ArmFaultVals<JSNotASmiFault>::vals(
+    "JavaScript Not a SMI",    0x000, 0x000, 0x000, 0x000, 0x000, MODE_SVC,
+    0, 0, 0, 0, false, true,  true,  EC_UNKNOWN
+);
 
 Addr
 ArmFault::getVector(ThreadContext *tc)
@@ -1785,6 +1789,30 @@ ArmSev::invoke(ThreadContext *tc, const StaticInstPtr &inst) {
     tc->getCpuPtr()->clearInterrupt(tc->threadId(), INT_SEV, 0);
 }
 
+///////////////////////
+// JS SMI Arithmetic //
+///////////////////////
+
+void
+JSNotASmiFault::invoke(ThreadContext *tc, const StaticInstPtr &inst)
+{
+    // if (FullSystem) {
+    //     ArmFault::invoke(tc, inst);
+    //     return;
+    // }
+
+    // // Only load instructions can trigger this fault;
+    auto arm_inst = static_cast<ArmStaticInst *>(inst.get());
+    assert(arm_inst->isLoad());
+    panic("Attempted to convert non-SMI to SMI, value = %d, instruction = "
+          "'%s' (inst 0x%08x)\n", nonSmiValue,
+          arm_inst->getName(), arm_inst->encoding());
+}
+
+//////////////////////////////
+// End of JS SMI Arithmetic //
+//////////////////////////////
+
 // Instantiate all the templates to make the linker happy
 template class ArmFaultVals<Reset>;
 template class ArmFaultVals<UndefinedInstruction>;
@@ -1812,7 +1840,7 @@ template class ArmFaultVals<ArmSev>;
 template class AbortFault<PrefetchAbort>;
 template class AbortFault<DataAbort>;
 template class AbortFault<VirtualDataAbort>;
-
+template class ArmFaultVals<JSNotASmiFault>;
 
 IllegalInstSetStateFault::IllegalInstSetStateFault()
 {}

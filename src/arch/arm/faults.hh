@@ -674,7 +674,7 @@ class ArmSev : public ArmFaultVals<ArmSev>
                 StaticInst::nullStaticInstPtr) override;
 };
 
-/// Illegal Instruction Set State fault (AArch64 only)
+// Illegal Instruction Set State fault (AArch64 only)
 class IllegalInstSetStateFault : public ArmFaultVals<IllegalInstSetStateFault>
 {
   public:
@@ -682,6 +682,28 @@ class IllegalInstSetStateFault : public ArmFaultVals<IllegalInstSetStateFault>
 
     bool routeToHyp(ThreadContext *tc) const override;
 };
+
+///////////////////////
+// JS SMI Arithmetic //
+///////////////////////
+
+// Fault triggered when a value loaded from memory
+//  is not a Small Integer (SMI)
+class JSNotASmiFault : public ArmFaultVals<JSNotASmiFault>
+{
+  private:
+    uint64_t nonSmiValue;
+
+  public:
+    JSNotASmiFault(uint64_t _nonSmiValue): nonSmiValue(_nonSmiValue)
+    {}
+    void invoke(ThreadContext *tc, const StaticInstPtr &inst =
+                StaticInst::nullStaticInstPtr) override;
+};
+
+//////////////////////////////
+// End of JS SMI Arithmetic //
+//////////////////////////////
 
 /*
  * Explicitly declare template static member variables to avoid warnings
@@ -711,6 +733,7 @@ template<> ArmFault::FaultVals ArmFaultVals<HardwareBreakpoint>::vals;
 template<> ArmFault::FaultVals ArmFaultVals<Watchpoint>::vals;
 template<> ArmFault::FaultVals ArmFaultVals<SoftwareStepFault>::vals;
 template<> ArmFault::FaultVals ArmFaultVals<ArmSev>::vals;
+template<> ArmFault::FaultVals ArmFaultVals<JSNotASmiFault>::vals;
 
 /**
  * Returns true if the fault passed as a first argument was triggered

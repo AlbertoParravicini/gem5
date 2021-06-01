@@ -38,6 +38,7 @@
 #ifndef __ARCH_ARM_MEM64_HH__
 #define __ARCH_ARM_MEM64_HH__
 
+#include "arch/arm/faults.hh"
 #include "arch/arm/insts/misc64.hh"
 #include "arch/arm/insts/static_inst.hh"
 
@@ -281,6 +282,43 @@ class MemoryAtomicPair64 : public Memory64
 
     std::string generateDisassembly(
             Addr pc, const Loader::SymbolTable *symtab) const override;
+};
+
+///////////////////////
+// JS SMI Arithmetic //
+///////////////////////
+
+class CheckIfSmiAndCastInterface
+{
+  protected:
+    Fault checkIfSmiAndCast(uint64_t *loadedValue) const;
+};
+
+class MemorySmiImm64 : public MemoryImm64, public CheckIfSmiAndCastInterface
+{
+  protected:
+    int64_t imm;
+
+    MemorySmiImm64(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
+                IntRegIndex _dest, IntRegIndex _base, int64_t _imm)
+        : MemoryImm64(mnem, _machInst, __opClass, _dest, _base, _imm)
+    {}
+};
+
+class MemorySmiReg64 : public MemoryReg64, public CheckIfSmiAndCastInterface
+{
+  protected:
+    IntRegIndex offset;
+    ArmExtendType type;
+    uint64_t shiftAmt;
+
+    MemorySmiReg64(const char *mnem, ExtMachInst _machInst,
+                OpClass __opClass, IntRegIndex _dest, IntRegIndex _base,
+                IntRegIndex _offset, ArmExtendType _type,
+                uint64_t _shiftAmt)
+        : MemoryReg64(mnem, _machInst, __opClass, _dest,
+                      _base, _offset, _type, _shiftAmt)
+    {}
 };
 
 }

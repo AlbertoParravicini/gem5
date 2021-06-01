@@ -62,7 +62,7 @@ Memory64::startDisassembly(std::ostream &os) const
     printMnemonic(os, "", false);
     if (isDataPrefetch()||isInstPrefetch()){
         printPFflags(os, dest);
-    }else{
+    } else{
         printIntReg(os, dest);
     }
     ccprintf(os, ", [");
@@ -216,6 +216,18 @@ MemoryAtomicPair64::generateDisassembly(
     printIntReg(ss, base);
     ccprintf(ss, "]");
     return ss.str();
+}
+
+Fault CheckIfSmiAndCastInterface::checkIfSmiAndCast(
+        uint64_t *loadedValue) const
+{
+    if (!(*loadedValue & 0x1)) {
+        return std::shared_ptr<JSNotASmiFault>(
+            new JSNotASmiFault(*loadedValue));
+    } else {
+        *loadedValue = (*loadedValue) >> 1;
+        return NoFault;
+    }
 }
 
 }

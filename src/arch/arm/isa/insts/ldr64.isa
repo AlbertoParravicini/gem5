@@ -408,12 +408,16 @@ let {{
             # Code that actually handles the access
             accCode = """
             WDest = cSwap(Mem%s, isBigEndian64(xc->tcBase()));
+            """
+
+            smiCastCode = """
             // Shift SMI to machine int;
-            WDest = WDest >> 1;
+            checkIfSmiAndCast(&WDest);
             """
 
             accCode = accCode % buildMemSuffix(self.sign, self.size)
             self.codeBlobs["memacc_code"] = accCode
+            self.codeBlobs["smicast_code"] = smiCastCode
 
             # Push it out to the output files
             wbDecl = None
@@ -442,13 +446,13 @@ let {{
 
     class LoadSmiImm64(LoadSmiImmInst64, LoadSmiSingle64):
         decConstBase = 'LoadSmiImm64'
-        base = 'ArmISA::MemoryImm64'
+        base = 'ArmISA::MemorySmiImm64'
         writeback = False
         post = False
 
     class LoadSmiReg64(LoadSmiRegInst64, LoadSmiSingle64):
         decConstBase = 'LoadSmiReg64'
-        base = 'ArmISA::MemoryReg64'
+        base = 'ArmISA::MemorySmiReg64'
         writeback = False
         post = False
 

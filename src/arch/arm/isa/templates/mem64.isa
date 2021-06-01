@@ -954,6 +954,10 @@ def template LoadSmi64Execute {{
         }
 
         if (fault == NoFault) {
+            fault = %(smicast_code)s;
+        }
+
+        if (fault == NoFault) {
             %(op_wb)s;
         }
 
