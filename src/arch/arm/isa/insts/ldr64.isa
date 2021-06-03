@@ -411,13 +411,22 @@ let {{
             """
 
             smiCastCode = """
-            // Shift SMI to machine int;
-            checkIfSmiAndCast(&WDest);
+            checkIfSmiAndCast(WDest); // Shift SMI to machine int;
+            """
+
+            debugSmiCode1 = """
+            std::cout << "++++WDEST=" << WDest << std::endl;
+            """
+
+            debugSmiCode2 = """
+            std::cout << "++++WDEST-SHIFTED=" << WDest << std::endl;
             """
 
             accCode = accCode % buildMemSuffix(self.sign, self.size)
             self.codeBlobs["memacc_code"] = accCode
             self.codeBlobs["smicast_code"] = smiCastCode
+            self.codeBlobs["debug_smi_code_1"] = debugSmiCode1
+            self.codeBlobs["debug_smi_code_2"] = debugSmiCode2
 
             # Push it out to the output files
             wbDecl = None
@@ -612,11 +621,11 @@ let {{
     LoadSmiImm64("jsldrsmi", "LDRW64_SMI_IMM",
                  size=4, sign=False, flavor="normal").emit()
     LoadSmiImm64("jsldrsmi", "LDRX64_SMI_IMM",
-                 size=4, sign=False, flavor="normal").emit()
+                 size=8, sign=False, flavor="normal").emit()
     LoadSmiReg64("jsldrsmi", "LDRW64_SMI_REG",
                  size=4, sign=False, flavor="normal").emit()
     LoadSmiReg64("jsldrsmi", "LDRX64_SMI_REG",
-                 size=4, sign=False, flavor="normal").emit()
+                 size=8, sign=False, flavor="normal").emit()
     LoadSmiImm64("jsldursmi", "LDURW64_SMI_IMM",
                  size=4, sign=False, flavor="normal").emit()
     LoadSmiImm64("jsldursmi", "LDURX64_SMI_IMM",

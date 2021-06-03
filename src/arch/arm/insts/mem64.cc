@@ -219,13 +219,13 @@ MemoryAtomicPair64::generateDisassembly(
 }
 
 Fault CheckIfSmiAndCastInterface::checkIfSmiAndCast(
-        uint64_t *loadedValue) const
+        uint64_t &loadedValue) const
 {
-    if (!(*loadedValue & 0x1)) {
+    if (loadedValue & 0x1) {
         return std::shared_ptr<JSNotASmiFault>(
-            new JSNotASmiFault(*loadedValue));
+            new JSNotASmiFault(loadedValue));
     } else {
-        *loadedValue = (*loadedValue) >> 1;
+        loadedValue = loadedValue >> 1;
         return NoFault;
     }
 }

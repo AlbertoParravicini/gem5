@@ -954,7 +954,9 @@ def template LoadSmi64Execute {{
         }
 
         if (fault == NoFault) {
-            fault = %(smicast_code)s;
+           %(debug_smi_code_1)s;
+           fault = %(smicast_code)s;
+           %(debug_smi_code_2)s;
         }
 
         if (fault == NoFault) {
@@ -1000,6 +1002,12 @@ def template LoadSmi64CompleteAcc {{
 
         if (fault == NoFault) {
             %(memacc_code)s;
+        }
+
+        if (fault == NoFault) {
+           %(debug_smi_code_1)s;
+           fault = %(smicast_code)s;
+           %(debug_smi_code_2)s;
         }
 
         if (fault == NoFault) {

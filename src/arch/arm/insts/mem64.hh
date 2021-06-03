@@ -291,14 +291,12 @@ class MemoryAtomicPair64 : public Memory64
 class CheckIfSmiAndCastInterface
 {
   protected:
-    Fault checkIfSmiAndCast(uint64_t *loadedValue) const;
+    Fault checkIfSmiAndCast(uint64_t &loadedValue) const;
 };
 
 class MemorySmiImm64 : public MemoryImm64, public CheckIfSmiAndCastInterface
 {
   protected:
-    int64_t imm;
-
     MemorySmiImm64(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
                 IntRegIndex _dest, IntRegIndex _base, int64_t _imm)
         : MemoryImm64(mnem, _machInst, __opClass, _dest, _base, _imm)
@@ -308,10 +306,6 @@ class MemorySmiImm64 : public MemoryImm64, public CheckIfSmiAndCastInterface
 class MemorySmiReg64 : public MemoryReg64, public CheckIfSmiAndCastInterface
 {
   protected:
-    IntRegIndex offset;
-    ArmExtendType type;
-    uint64_t shiftAmt;
-
     MemorySmiReg64(const char *mnem, ExtMachInst _machInst,
                 OpClass __opClass, IntRegIndex _dest, IntRegIndex _base,
                 IntRegIndex _offset, ArmExtendType _type,

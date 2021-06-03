@@ -1796,10 +1796,10 @@ ArmSev::invoke(ThreadContext *tc, const StaticInstPtr &inst) {
 void
 JSNotASmiFault::invoke(ThreadContext *tc, const StaticInstPtr &inst)
 {
-    // if (FullSystem) {
-    //     ArmFault::invoke(tc, inst);
-    //     return;
-    // }
+    if (FullSystem) {
+        ArmFault::invoke(tc, inst);
+        return;
+    }
 
     // // Only load instructions can trigger this fault;
     auto arm_inst = static_cast<ArmStaticInst *>(inst.get());
